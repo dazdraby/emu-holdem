@@ -26,7 +26,7 @@ main =
 -}
             let tailDeck = generateDeck \\ (gambler1 ++ gambler2)
             let index = genRandomIndex (length tailDeck - 1) gen
-            let count = 100000:: Int
+            let count = 80000:: Int
             let oneHalf = 5
             let cnt1 = 3 * count
             let cnt2 = 3 * count
@@ -63,6 +63,7 @@ main =
             let divL' =  (*100) . (/fromIntegral(count * 15)) . fromIntegral
 
             putStrLn $ printf "Wins = %d%%"  (round $ divL' $ head myRes :: Int)
+            putStrLn $ printf "Draws = %d(%.4f%%)"  (myRes!!11) (divL' $ myRes!!11 :: Double)
             putStrLn $ printf "Royal flashes = %d(%.4f%%)"  (myRes!!10) (divL' $ myRes!!10 :: Double)
             putStrLn $ printf "Straight flashes = %d(%.4f%%)" (myRes!!9) (divL' $ myRes!!9 :: Double)
             putStrLn $ printf "Quads = %d(%.4f%%)"  (myRes!!8) (divL' $ myRes!!8 :: Double)
