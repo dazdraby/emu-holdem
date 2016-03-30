@@ -6,7 +6,6 @@ import System.Random
 import Control.Parallel
 import Control.Parallel.Strategies
 import Control.DeepSeq
---import Control.Monad.Par
 import Text.Printf
 
 
