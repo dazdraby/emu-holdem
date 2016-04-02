@@ -16,13 +16,22 @@ main =
             s1 <- getLine
             let gambler1 = parseHand s1
 
+            putStrLn "Enter gamblers quantity (Введите число игроков):"
+            q <- getLine
+            let ng = read q :: Int
+
+            putStrLn "Enter threads loading (Введите число игр на 1 поток):"
+            tl <- getLine
+            let count = read tl :: Int
+
+
 {-
             let gambler1 = [Card Queen Clubs, Card Queen Diamonds]
             let gambler2 = [Card Ace Hearts, Card King Hearts]
 -}
             let tailDeck = generateDeck \\ gambler1
+            gen <- getStdGen
             let index = genRandomIndex (length tailDeck - 1) gen
-            let count = 80000:: Int
             let oneHalf = 5
             let cnt1 = 3 * count
             let cnt2 = 3 * count
@@ -42,17 +51,16 @@ main =
             print [cnt1,cnt2,cnt3,cnt4,cnt5]
             putStr "1st hand:"
             print gambler1
-            putStr "2nd hand:"
-            print gambler2
+
 
             let myRes = runEval $
                             do
                             [i1,i2,i3,i4,i5] <- sequence [
-                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt1 in1),
-                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt2 in2),
-                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt3 in3),
-                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt4 in4),
-                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt5 in5)
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 ng cnt1 in1),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 ng cnt2 in2),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 ng cnt3 in3),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 ng cnt4 in4),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 ng cnt5 in5)
                                                          ]
                             return (zipWith (+) i1 $ zipWith (+) i2 $ zipWith (+) i3 $ zipWith (+) i4 i5)
 

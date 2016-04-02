@@ -14,7 +14,9 @@ module Probe
  generateDeck,
  genRandomIndex,
  parseHand,
- letsMultiPlay
+ letsMultiPlay,
+ getHands,
+ getBoard
  )
 
 where
@@ -160,7 +162,7 @@ genRandomIndex len sg = randomRs (0,len) sg :: [Int]
 -- Получить список с неповторяющимися n-картами из бесконечного списка
 getBoard :: [Int]  -> Int -> [Int]
 getBoard [] _  = error "Empty random list!!!"
-getBoard hs n  = take n $ nub $ take 3*n hs
+getBoard hs n  = take n $ nub $ take (3*n) hs
 
 -- Получить список рук противников
 getHands :: Hand -> [Hand]
@@ -323,12 +325,12 @@ letsPlayProto  td h1 h2 i =
    --- | n == 0 = []
    -- | otherwise =
                     let
-                        board = [td!!x| x <- getBoard i [] 5]
+                        board = [td!!x| x <- getBoard i 5]
                         c1 = isRepCombo (h1 ++ board)
                         c2 = isRepCombo (h2 ++ board)
 
                      in
-                        (c1 >= c2, c1, c2, board) : letsPlayProto  td h1 h2 (drop 10 i)
+                        (c1 >= c2, c1, c2, board) : letsPlayProto  td h1 h2 (drop 15 i)
 
 ------------------------------------  Функция, осуществляет n - розыгрышей
 -- Колода - Первая рука - Вторая рука  - Случайные индексы -> Число розыгрышей - Список результатов
@@ -342,7 +344,7 @@ letsPlay  td h1 h2 i =
                         c1 = isRepCombo (h1 ++ board)
                         c2 = isRepCombo (h2 ++ board)
                      in
-                        (c1 >= c2):letsPlay td h1 h2 (drop n1*3 i)
+                        (c1 >= c2):letsPlay td h1 h2 (drop (n1*3) i)
 
 letsPlayStats :: Hand -> Hand -> Hand -> Int -> [Int] -> [Int]
 letsPlayStats  td h1 h2 cn i
@@ -350,7 +352,7 @@ letsPlayStats  td h1 h2 cn i
     | otherwise =
                     let
                         n1 = 5
-                        board = [td!!x| x <- getBoard i [] n1]
+                        board = [td!!x| x <- getBoard i n1]
                         c1 = isRepCombo (h1 ++ board)
                         c2 = isRepCombo (h2 ++ board)
                         pos = fromJust $ lookup (comboType c1) $ zip [(NoCombo)..(RoyalFlash)] [1..10]
@@ -359,11 +361,11 @@ letsPlayStats  td h1 h2 cn i
                                                             ++ [sum $ 0:[1| c1 == c2]]
                      in
                         if c1 > c2 then
-                           zipWith (+) result (letsPlayStats td h1 h2 (cn-1) (drop n1*3 i))
+                           zipWith (+) result (letsPlayStats td h1 h2 (cn-1) (drop (n1*3) i))
                         else if c1 == c2 then
-                             zipWith (+) ([head result] ++ replicate 10 0 ++ [last result]) (letsPlayStats td h1 h2 (cn-1) (drop n1*3 i))
+                             zipWith (+) ([head result] ++ replicate 10 0 ++ [last result]) (letsPlayStats td h1 h2 (cn-1) (drop (n1*3) i))
                              else
-                                letsPlayStats td h1 h2 (cn-1) (drop n1*3 i)
+                                letsPlayStats td h1 h2 (cn-1) (drop (n1*3) i)
 
 letsMultiPlay :: Hand -> Hand -> Int -> Int -> [Int] -> [Int]
 letsMultiPlay  td h1 pn cn i
@@ -371,7 +373,7 @@ letsMultiPlay  td h1 pn cn i
     | otherwise =
                     let
                         n1 = 5
-                        gsi = take 2*pn $ nub $ take 6*pn i  -- индексы карт других игроков
+                        gsi = take (2*pn) $ nub $ take (6*pn) i  -- индексы карт других игроков
                         gs = [td!!x| x <- gsi] -- карты других игроков
                         newTail = td \\ gs
                         newI = filter (\x -> x < length newTail) i
@@ -381,10 +383,11 @@ letsMultiPlay  td h1 pn cn i
                         cs = map (isRepCombo . (++ board)) $ getHands gs
 
                         pos = fromJust $ lookup (comboType c1) $ zip [(NoCombo)..(RoyalFlash)] [1..10]
-                        result = [sum $ 0:[1| all (< c1) cs]]  ++ replicate (pos - 1) 0 ++ [1] ++ replicate (10 - pos) 0]
+                        isWin = all (< c1) cs
+                        result = [sum $ 0:[1| isWin]]  ++ replicate (pos - 1) 0 ++ [1] ++ replicate (10 - pos) 0
                         th = (n1 + cn*2) * 3
                      in
-                        if c1 > c2 then
+                        if isWin then
                            zipWith (+) result (letsMultiPlay td h1 pn (cn-1) (drop th i))
                              else
                                 letsMultiPlay td h1 pn (cn-1) (drop th i)
