@@ -354,6 +354,28 @@ letsPlayStats  td h1 h2 cn i
                              else
                                 letsPlayStats td h1 h2 (cn-1) (drop 5 i)
 
+letsMultiPlay :: Hand -> Hand -> Int -> Int -> [Int] -> [Int]
+letsMultiPlay  td h1 pn cn i
+    | cn == 0 = replicate 12 0
+    | otherwise =
+                    let
+                        gsi = take (pn * 2) i  -- индексы карт других игроков
+                        gs = [td!!x| x <- gsi] -- карты других игроков
+
+                        board = [td!!x| x <- getBoard i [] 5]
+                        c1 = isRepCombo (h1 ++ board)
+                        c2 = isRepCombo (h2 ++ board)
+                        pos = fromJust $ lookup (comboType c1) $ zip [(NoCombo)..(RoyalFlash)] [1..10]
+
+                        result = [sum $ 0:[1| c1 >= c2]]  ++ replicate (pos - 1) 0 ++ [1] ++ replicate (10 - pos) 0
+                                                            ++ [sum $ 0:[1| c1 == c2]]
+                     in
+                        if c1 > c2 then
+                           zipWith (+) result (MultiPlay td h1 h2 (cn-1) (drop 5 i))
+                        else if c1 == c2 then
+                             zipWith (+) ([head result] ++ replicate 10 0 ++ [last result]) (MultiPlay td h1 h2 (cn-1) (drop 5 i))
+                             else
+                                MultiPlay td h1 h2 (cn-1) (drop 5 i)
 {-
 myFlash = [Card Five Clubs ,Card Five Hearts , Card Six Hearts , Card Six Clubs , Card Seven Hearts , Card Eight Hearts , Card Nine Hearts]
 myHand2 = [Card Five Hearts , Card Six Hearts , Card Seven Hearts , Card Eight Hearts , Card Nine Diamonds, Card Two Diamonds, Card Ace Spades]
