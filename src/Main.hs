@@ -15,16 +15,12 @@ main =
             putStrLn "Enter 1st hand (Введите руку первого игрока):"
             s1 <- getLine
             let gambler1 = parseHand s1
-            putStrLn "Enter 2nd hand:"
-            s2 <- getLine
-            let gambler2 = parseHand s2
-            gen <- getStdGen
 
 {-
             let gambler1 = [Card Queen Clubs, Card Queen Diamonds]
             let gambler2 = [Card Ace Hearts, Card King Hearts]
 -}
-            let tailDeck = generateDeck \\ (gambler1 ++ gambler2)
+            let tailDeck = generateDeck \\ gambler1
             let index = genRandomIndex (length tailDeck - 1) gen
             let count = 80000:: Int
             let oneHalf = 5
@@ -52,18 +48,17 @@ main =
             let myRes = runEval $
                             do
                             [i1,i2,i3,i4,i5] <- sequence [
-                                                rpar $ force (letsPlayStats tailDeck gambler1 gambler2 cnt1 in1),
-                                                rpar $ force (letsPlayStats tailDeck gambler1 gambler2 cnt2 in2),
-                                                rpar $ force (letsPlayStats tailDeck gambler1 gambler2 cnt3 in3),
-                                                rpar $ force (letsPlayStats tailDeck gambler1 gambler2 cnt4 in4),
-                                                rpar $ force (letsPlayStats tailDeck gambler1 gambler2 cnt5 in5)
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt1 in1),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt2 in2),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt3 in3),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt4 in4),
+                                                rpar $ force (letsMultiPlay tailDeck gambler1 6 cnt5 in5)
                                                          ]
                             return (zipWith (+) i1 $ zipWith (+) i2 $ zipWith (+) i3 $ zipWith (+) i4 i5)
 
             let divL' =  (*100) . (/fromIntegral(count * 15)) . fromIntegral
 
             putStrLn $ printf "Wins = %d%%"  (round $ divL' $ head myRes :: Int)
-            putStrLn $ printf "Draws = %d(%.4f%%)"  (myRes!!11) (divL' $ myRes!!11 :: Double)
             putStrLn $ printf "Royal flashes = %d(%.4f%%)"  (myRes!!10) (divL' $ myRes!!10 :: Double)
             putStrLn $ printf "Straight flashes = %d(%.4f%%)" (myRes!!9) (divL' $ myRes!!9 :: Double)
             putStrLn $ printf "Quads = %d(%.4f%%)"  (myRes!!8) (divL' $ myRes!!8 :: Double)

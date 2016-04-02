@@ -13,7 +13,9 @@ module Probe
  letsPlayStats,
  generateDeck,
  genRandomIndex,
- parseHand)
+ parseHand,
+ letsMultiPlay
+ )
 
 where
 
@@ -156,11 +158,18 @@ genRandomIndex :: Int -> StdGen -> [Int]
 genRandomIndex len sg = randomRs (0,len) sg :: [Int]
 
 -- Получить список с неповторяющимися n-картами из бесконечного списка
-getBoard :: [Int] -> [Int] -> Int -> [Int]
-getBoard [] _ _  = error "Empty random list!!!"
-getBoard _ acc 0 = acc
-getBoard (h:ts) acc n = if h `elem` acc then getBoard ts acc n
-                          else getBoard ts (acc ++ [h]) (n-1)
+getBoard :: [Int]  -> Int -> [Int]
+getBoard [] _  = error "Empty random list!!!"
+getBoard hs n  = take n $ nub $ take 3*n hs
+
+-- Получить список рук противников
+getHands :: Hand -> [Hand]
+getHands (a:b:xs) = [a,b]:getHands xs
+getHands [a] = []
+getHands [] = []
+
+
+
 ------------------------------- Функции, определяющие наличие покерной комбинации --------------------------
 
 --------------- 1. Проверка на стрит
@@ -328,18 +337,20 @@ letsPlay  td h1 h2 i =
    -- | cn == 0 = []
    -- | otherwise =
                     let
-                        board = [td!!x| x <- getBoard i [] 5]
+                        n1 = 5
+                        board = [td!!x| x <- getBoard i n1]
                         c1 = isRepCombo (h1 ++ board)
                         c2 = isRepCombo (h2 ++ board)
                      in
-                        (c1 >= c2):letsPlay td h1 h2 (drop 5 i)
+                        (c1 >= c2):letsPlay td h1 h2 (drop n1*3 i)
 
 letsPlayStats :: Hand -> Hand -> Hand -> Int -> [Int] -> [Int]
 letsPlayStats  td h1 h2 cn i
     | cn == 0 = replicate 12 0
     | otherwise =
                     let
-                        board = [td!!x| x <- getBoard i [] 5]
+                        n1 = 5
+                        board = [td!!x| x <- getBoard i [] n1]
                         c1 = isRepCombo (h1 ++ board)
                         c2 = isRepCombo (h2 ++ board)
                         pos = fromJust $ lookup (comboType c1) $ zip [(NoCombo)..(RoyalFlash)] [1..10]
@@ -348,34 +359,35 @@ letsPlayStats  td h1 h2 cn i
                                                             ++ [sum $ 0:[1| c1 == c2]]
                      in
                         if c1 > c2 then
-                           zipWith (+) result (letsPlayStats td h1 h2 (cn-1) (drop 5 i))
+                           zipWith (+) result (letsPlayStats td h1 h2 (cn-1) (drop n1*3 i))
                         else if c1 == c2 then
-                             zipWith (+) ([head result] ++ replicate 10 0 ++ [last result]) (letsPlayStats td h1 h2 (cn-1) (drop 5 i))
+                             zipWith (+) ([head result] ++ replicate 10 0 ++ [last result]) (letsPlayStats td h1 h2 (cn-1) (drop n1*3 i))
                              else
-                                letsPlayStats td h1 h2 (cn-1) (drop 5 i)
+                                letsPlayStats td h1 h2 (cn-1) (drop n1*3 i)
 
 letsMultiPlay :: Hand -> Hand -> Int -> Int -> [Int] -> [Int]
 letsMultiPlay  td h1 pn cn i
-    | cn == 0 = replicate 12 0
+    | cn == 0 = replicate 11 0
     | otherwise =
                     let
-                        gsi = take (pn * 2) i  -- индексы карт других игроков
+                        n1 = 5
+                        gsi = take 2*pn $ nub $ take 6*pn i  -- индексы карт других игроков
                         gs = [td!!x| x <- gsi] -- карты других игроков
-
-                        board = [td!!x| x <- getBoard i [] 5]
+                        newTail = td \\ gs
+                        newI = filter (\x -> x < length newTail) i
+                        board = [newTail!!x| x <- getBoard newI n1]
                         c1 = isRepCombo (h1 ++ board)
-                        c2 = isRepCombo (h2 ++ board)
-                        pos = fromJust $ lookup (comboType c1) $ zip [(NoCombo)..(RoyalFlash)] [1..10]
 
-                        result = [sum $ 0:[1| c1 >= c2]]  ++ replicate (pos - 1) 0 ++ [1] ++ replicate (10 - pos) 0
-                                                            ++ [sum $ 0:[1| c1 == c2]]
+                        cs = map (isRepCombo . (++ board)) $ getHands gs
+
+                        pos = fromJust $ lookup (comboType c1) $ zip [(NoCombo)..(RoyalFlash)] [1..10]
+                        result = [sum $ 0:[1| all (< c1) cs]]  ++ replicate (pos - 1) 0 ++ [1] ++ replicate (10 - pos) 0]
+                        th = (n1 + cn*2) * 3
                      in
                         if c1 > c2 then
-                           zipWith (+) result (MultiPlay td h1 h2 (cn-1) (drop 5 i))
-                        else if c1 == c2 then
-                             zipWith (+) ([head result] ++ replicate 10 0 ++ [last result]) (MultiPlay td h1 h2 (cn-1) (drop 5 i))
+                           zipWith (+) result (letsMultiPlay td h1 pn (cn-1) (drop th i))
                              else
-                                MultiPlay td h1 h2 (cn-1) (drop 5 i)
+                                letsMultiPlay td h1 pn (cn-1) (drop th i)
 {-
 myFlash = [Card Five Clubs ,Card Five Hearts , Card Six Hearts , Card Six Clubs , Card Seven Hearts , Card Eight Hearts , Card Nine Hearts]
 myHand2 = [Card Five Hearts , Card Six Hearts , Card Seven Hearts , Card Eight Hearts , Card Nine Diamonds, Card Two Diamonds, Card Ace Spades]
