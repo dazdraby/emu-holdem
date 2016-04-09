@@ -334,10 +334,8 @@ letsPlay  td h1 h2 i =
                      in
                         (c1 >= c2):letsPlay td h1 h2 (drop 5 i)
 
-letsPlayStats :: Hand -> Hand -> Hand -> Int -> [Int] -> [Int]
-letsPlayStats  td h1 h2 cn i
-    | cn == 0 = replicate 12 0
-    | otherwise =
+letsPlayStats :: Hand -> Hand -> Hand -> [Int] -> [Int]
+letsPlayStats  td h1 h2 i =
                     let
                         board = [td!!x| x <- getBoard i [] 5]
                         c1 = isRepCombo (h1 ++ board)
@@ -348,11 +346,11 @@ letsPlayStats  td h1 h2 cn i
                                                             ++ [sum $ 0:[1| c1 == c2]]
                      in
                         if c1 > c2 then
-                           zipWith (+) result (letsPlayStats td h1 h2 (cn-1) (drop 5 i))
+                            result
                         else if c1 == c2 then
-                             zipWith (+) ([head result] ++ replicate 10 0 ++ [last result]) (letsPlayStats td h1 h2 (cn-1) (drop 5 i))
+                            [head result] ++ replicate 10 0 ++ [last result]
                              else
-                                letsPlayStats td h1 h2 (cn-1) (drop 5 i)
+                                replicate 12 0
 
 {-
 myFlash = [Card Five Clubs ,Card Five Hearts , Card Six Hearts , Card Six Clubs , Card Seven Hearts , Card Eight Hearts , Card Nine Hearts]
