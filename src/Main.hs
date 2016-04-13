@@ -7,6 +7,7 @@ import Control.Parallel
 import Control.Parallel.Strategies
 import Control.DeepSeq
 import Text.Printf
+import System.Environment
 
 splitListN :: Int -> [Int] -> [[Int]]
 splitListN _ [] = []
@@ -18,7 +19,7 @@ splitListN n xs = take n xs:splitListN n (drop n xs)
 main:: IO()
 main =
         do
-
+            args <- getArgs
             putStrLn "Enter 1st hand (Введите руку первого игрока):"
             s1 <- getLine
             let gambler1 = parseHand s1
@@ -29,23 +30,26 @@ main =
 
  {-           let gambler1 = [Card Queen Clubs, Card Queen Diamonds]
             let gambler2 = [Card Ace Hearts, Card King Hearts]-}
+            let total = 1000000
             let tailDeck = generateDeck \\ (gambler1 ++ gambler2)
-            let count = 1000000 :: Int
+            let numThreads = read $ head args :: Int
+            let count = total `div` numThreads :: Int
 
             putStr "Total amount:"
-            print count
+            print total
             putStr "1st hand:"
             print gambler1
             putStr "2nd hand:"
             print gambler2
+            let index = genRandomIndex (length tailDeck - 1)  gen
+            let play = letsPlayStatsOld tailDeck gambler1 gambler2 count
+            let myRes = runEval $
+                        do
+                          results <- sequence $ map (\x -> rpar $ force ( play $ drop ((x-1)*count*15) index)) [1..numThreads]
+                          return $ foldl1' (zipWith (+)) $ results
 
-            let play = letsPlayStats tailDeck gambler1 gambler2 -- force
 
-            let newIndex = take count . splitListN 15 . genRandomIndex (length tailDeck - 1) $ gen
-
-            let myRes = foldl1' (zipWith (+)) $ parMap rdeepseq play newIndex
-
-            let divL' =  (*100) . (/fromIntegral count) . fromIntegral
+            let divL' =  (*100) . (/fromIntegral total) . fromIntegral
 
             putStrLn $ printf "Wins = %d%%"  (round $ divL' $ head myRes :: Int)
             putStrLn $ printf "Draws = %d(%.4f%%)"  (myRes!!11) (divL' $ myRes!!11 :: Double)
